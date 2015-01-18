@@ -1,7 +1,7 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServer", "ChatServer\ChatServer.csproj", "{0D2FE902-5D69-4497-8564-C4C3F3CD5511}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlaneLogger", "PlaneLogger\PlaneLogger.csproj", "{0D2FE902-5D69-4497-8564-C4C3F3CD5511}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

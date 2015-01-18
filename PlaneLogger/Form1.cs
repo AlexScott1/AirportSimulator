@@ -12,16 +12,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 
-//////////////////////////////////////////////////////////////////////////////////////////
-//                                                                                      //
-//           Code based on :                                                            //
-//           "C# for Programmers Second Edition", Deitel & Deitel .                     //
-//           [Chapter 23, pages 1028-1031]                                              //
-//                                                                                      //
-//////////////////////////////////////////////////////////////////////////////////////////
-
-
-namespace ChatServer
+namespace PlaneLogger
 {
     public partial class Form1 : Form
     {
@@ -30,21 +21,17 @@ namespace ChatServer
             InitializeComponent();
         }
 
-        private Socket connection;
-        private Thread readThread;
-        private NetworkStream socketStream;
-        private BinaryWriter writer;
-        private BinaryReader reader;
         private const int BUFSIZE = 128;
         private int numOfTakeoffs = 0, numOfLandings = 0;
         private string b = string.Empty;
+        private Thread readThread;
 
         private void ChatServerForm_Load(object sender, EventArgs e)
         {
 
             readThread = new Thread(new ThreadStart(RunServer));
             readThread.Start();
-            DisplayMessage("Server loaded and connected\r\n-----------------------------------------------");
+            DisplayMessage("Server loaded and waiting for connections\r\n-----------------------------------------------------------------");
         }
 
         private void ChatServerForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -94,81 +81,74 @@ namespace ChatServer
         
         public void RunServer()
         {
-
-            
-            int servPort = 888; // (args.Length == 1) ? Int32.Parse(args[0]) : 8080;
+            int servPort = 888; //Port 888 is the default
            
-            TcpListener listener = null;
+            TcpListener listener = null; //Initalise and set it to null
 
-            try
+            try //Try catch in case connection fails
             {
-                // Create a TCPListener to accept client connections
+                //Create a TCPListener to accept client connections (from any IP address)
                 listener = new TcpListener(IPAddress.Any, servPort);
                 listener.Start();
             }
             catch (SocketException se)
             {
-                // IPAddress.Any
                 Console.WriteLine(se.ErrorCode + ": " + se.Message);
-                //Console.ReadKey();
                 Environment.Exit(se.ErrorCode);
-
             }
 
-            byte[] rcvBuffer = new byte[BUFSIZE]; // Receive buffer
-            int bytesRcvd; // Received byte count
-            for (; ; )
-            { // Run forever, accepting and servicing connections
-                // Console.WriteLine(IPAddress.Any);
+            byte[] rcvBuffer = new byte[BUFSIZE]; //Receive buffer
+            int bytesRcvd; //Received byte count from the connection
+            for (; ; ) //Run infinitely, accepting all connections until the application is closed
+            { 
                 TcpClient client = null;
                 NetworkStream netStream = null;
-                //Console.WriteLine(IPAddress.None);
-
+               
                 try
                 {
-                    client = listener.AcceptTcpClient(); // Get client connection
+                    client = listener.AcceptTcpClient(); //Get client connection
                     netStream = client.GetStream();
                     Console.Write("Handling client - ");
 
-                    // Receive until client closes connection, indicated by 0 return value
-                    int totalBytesEchoed = 0;
-                    
-                    
+                    int totalBytesEchoed = 0; //Receive until client closes connection, indicated by 0 return value
+                                       
                     while ((bytesRcvd = netStream.Read(rcvBuffer, 0, rcvBuffer.Length)) > 0)
                     {
-                        
                         netStream.Write(rcvBuffer, 0, bytesRcvd);
                         string s = Encoding.UTF8.GetString(rcvBuffer, 0, rcvBuffer.Length);
 
-                        for (int i = 0; i < s.Length; i++)
+                        for (int i = 0; i < s.Length; i++) 
                         {
-                            if (Char.IsDigit(s[i]))
+                            if (Char.IsDigit(s[i])) //Check if the string has a number in it (eg 'HUB 1')
                                 b += s[i];
                         }
 
-                        DisplayMessage("\r\n" + s);
+                        DisplayMessage("\r\n" + s); //Add the message to the logger
                         totalBytesEchoed += bytesRcvd;
-                        
-                        
                     }
-                    if (b.Length < 1)
-                    {
+
+                    if (b.Length == 0) //If there was no number in the string ('A plane has taken off')
+                    {                  //Add 1 to the taken off count
                         numOfTakeoffs++;
                         DisplayTotPlanes(numOfTakeoffs.ToString());
                     }
-                    else
-                    {
+                    else if (b.Length == 1) //If there was one number in the string ('A plane has arrived at HUB 1')
+                    {                       //Add 1 to the landing count
                         b = string.Empty;
                         numOfLandings++;
                         DisplayTotLandings(numOfLandings.ToString());
                     }
-                        
-                    Console.WriteLine("echoed {0} bytes.", totalBytesEchoed);
+                    else //If there was more than 1 number in the string ('A Boeing 747 has landed at the Airport')
+                    {    //Don't increment any counters.
+                        b = string.Empty;
+                    }
+                                            
+                    Console.WriteLine("echoed {0} bytes.", totalBytesEchoed); //Echo it back to the console
                     
                     for (int i = 0; i < BUFSIZE; i++)
                         rcvBuffer[i] = 0;
                     
-                    // Close the stream and socket. We are done with this client!
+                    //Close the stream and socket. We are done with this connection
                     netStream.Close();
                     client.Close();
 

@@ -1,4 +1,4 @@
-﻿namespace ChatServer
+﻿namespace PlaneLogger
 {
     partial class Form1
     {
